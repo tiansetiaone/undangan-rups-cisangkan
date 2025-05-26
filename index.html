@@ -21,9 +21,10 @@
       align-items: center;
       perspective: 1000px;
       padding: 20px;
+      overflow-x: hidden;
     }
 
-    /* Container Utama (Sama seperti versi statis) */
+    /* Container Utama */
     .container {
       max-width: 100%;
       width: 100%;
@@ -52,7 +53,7 @@
       display: block;
       margin: 0 auto;
       backface-visibility: hidden;
-      transition: transform 1s ease;
+      transition: all 1s ease; /* Ditambah 'all' untuk animasi tambahan */
       transform-origin: left center;
       position: absolute;
       top: 0;
@@ -63,7 +64,8 @@
     .front-cover {
       z-index: 2;
       transform: rotateY(0deg);
-      position: relative; /* Untuk centering */
+      position: relative;
+      opacity: 1;
     }
 
     /* Isi Undangan */
@@ -71,6 +73,7 @@
       z-index: 1;
       transform: rotateY(180deg);
       display: none;
+      opacity: 1;
     }
 
     /* State Flip */
@@ -83,7 +86,23 @@
       display: block;
     }
 
-    /* Responsive (Sama seperti versi statis) */
+    /* Efek Kembali ke Cover */
+    .returning .content-page {
+      animation: fadeOutUp 1s forwards;
+    }
+
+    @keyframes fadeOutUp {
+      0% {
+        transform: rotateY(0deg);
+        top: 0;
+      }
+      100% {
+        transform: rotateY(0deg) translateY(-100px);
+        top: -600px;
+      }
+    }
+
+    /* Responsive */
     @media (min-width: 768px) {
       .container {
         max-width: 800px;
@@ -99,7 +118,7 @@
       .page {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
-        .container {
+      .container {
         margin-top: -1rem;
         padding: 0rem;
       }
@@ -125,54 +144,74 @@
     </div>
   </div>
 
-    <script>
+  <script>
     const flipBook = document.getElementById('flipBook');
     let isFlipped = false;
-    let autoFlipTimer;
-    const flipDuration = 5000; // 5 detik untuk auto flip
+    let hasAutoFlipped = false;
+    let isAnimating = false;
 
-    // Fungsi flip
+    // Fungsi flip dengan efek khusus saat kembali
     function flipPage() {
-      flipBook.classList.toggle('flipped');
-      isFlipped = !isFlipped;
-      resetAutoFlipTimer();
+      if (isAnimating) return;
+      
+      // Kembali ke cover dengan efek khusus
+      if (isFlipped) {
+        isAnimating = true;
+        flipBook.classList.add('returning');
+        
+        setTimeout(() => {
+          flipBook.classList.remove('flipped', 'returning');
+          isFlipped = false;
+          isAnimating = false;
+        }, 1000); // Sesuai durasi animasi
+      } 
+      // Buka ke isi normal
+      else {
+        flipBook.classList.add('flipped');
+        isFlipped = true;
+      }
     }
 
-    // Timer otomatis
-    function startAutoFlipTimer() {
-      autoFlipTimer = setTimeout(flipPage, flipDuration);
+    // Auto flip hanya saat pertama load
+    function initialAutoFlip() {
+      if (!hasAutoFlipped) {
+        setTimeout(() => {
+          flipBook.classList.add('flipped');
+          isFlipped = true;
+          hasAutoFlipped = true;
+        }, 1500);
+      }
     }
 
-    function resetAutoFlipTimer() {
-      clearTimeout(autoFlipTimer);
-      startAutoFlipTimer();
-    }
+    // 1. Aksi Timer Otomatis (hanya sekali saat load)
+    window.addEventListener('load', initialAutoFlip);
 
-    // 1. Aksi Timer Otomatis
-    startAutoFlipTimer();
-
-    // 2. Aksi Klik
-    flipBook.addEventListener('click', flipPage);
+    // 2. Aksi Klik (kembali ke cover dengan efek)
+    flipBook.addEventListener('click', function() {
+      if (isFlipped && !isAnimating) {
+        flipPage();
+      }
+    });
     
-    // 3. Aksi Geser/Swipe
+    // 3. Aksi Geser/Swipe (tetap bekerja tanpa efek khusus)
     let touchStartX = 0;
     let touchEndX = 0;
     const swipeThreshold = 50;
     
     flipBook.addEventListener('touchstart', e => {
       touchStartX = e.changedTouches[0].screenX;
-      clearTimeout(autoFlipTimer); // Jeda timer saat interaksi manual
     }, {passive: true});
     
     flipBook.addEventListener('touchend', e => {
+      if (isAnimating) return;
+      
       touchEndX = e.changedTouches[0].screenX;
       
       if (touchStartX - touchEndX > swipeThreshold && !isFlipped) {
-        flipPage(); // Geser ke kiri
+        flipBook.classList.add('flipped');
+        isFlipped = true;
       } else if (touchEndX - touchStartX > swipeThreshold && isFlipped) {
-        flipPage(); // Geser ke kanan
-      } else {
-        startAutoFlipTimer(); // Lanjutkan timer jika bukan swipe
+        flipPage(); // Gunakan efek khusus saat kembali
       }
     }, {passive: true});
 

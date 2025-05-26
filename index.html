@@ -14,37 +14,97 @@
       align-items: center;
       min-height: 100vh;
       font-family: Arial, sans-serif;
+      perspective: 1000px;
+      overflow-x: hidden;
     }
-    .container {
-      max-width: 100%;
+    .flip-book {
       width: 100%;
-      padding: 20px;
-      box-sizing: border-box;
+      max-width: 800px;
+      position: relative;
+      transform-style: preserve-3d;
+      cursor: pointer;
     }
-    .undangan-img {
+    .page {
       width: 100%;
       height: auto;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      display: block;
-      margin: 0 auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      position: absolute;
+      backface-visibility: hidden;
+      transition: transform 1s;
+      transform-origin: left center;
     }
-    /* Untuk desktop (lebar gambar maksimal 800px) */
-    @media (min-width: 768px) {
-      .container {
-        max-width: 800px;
+    .front-cover {
+      z-index: 2;
+      transform: rotateY(0deg);
+    }
+    .content-page {
+      z-index: 1;
+      transform: rotateY(180deg);
+      display: none;
+    }
+    .flipped .front-cover {
+      transform: rotateY(-180deg);
+    }
+    .flipped .content-page {
+      transform: rotateY(0deg);
+      display: block;
+    }
+    /* Untuk mobile */
+    @media (max-width: 768px) {
+      .flip-book {
+        max-width: 95%;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Gambar undangan statis -->
+  <div class="flip-book" id="flipBook">
+    <!-- Sampul Depan -->
+    <img 
+      src="cover.png" 
+      alt="Sampul Undangan" 
+      class="page front-cover"
+    >
+    
+    <!-- Isi Undangan -->
     <img 
       src="Sage Elegant Holy Communion Poster.png" 
-      alt="Undangan RUPS Tahunan 2025" 
-      class="undangan-img"
+      alt="Isi Undangan" 
+      class="page content-page"
     >
   </div>
+
+  <script>
+    const flipBook = document.getElementById('flipBook');
+    let isFlipped = false;
+    
+    // Efek flip saat diklik
+    flipBook.addEventListener('click', function() {
+      this.classList.toggle('flipped');
+      isFlipped = !isFlipped;
+    });
+    
+    // Efek flip saat di-swipe (untuk mobile)
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    flipBook.addEventListener('touchstart', e => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, {passive: true});
+    
+    flipBook.addEventListener('touchend', e => {
+      touchEndX = e.changedTouches[0].screenX;
+      if (touchStartX - touchEndX > 50 && !isFlipped) {
+        // Swipe kiri
+        flipBook.classList.add('flipped');
+        isFlipped = true;
+      } else if (touchEndX - touchStartX > 50 && isFlipped) {
+        // Swipe kanan
+        flipBook.classList.remove('flipped');
+        isFlipped = false;
+      }
+    }, {passive: true});
+  </script>
 </body>
 </html>

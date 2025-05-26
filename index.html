@@ -125,35 +125,63 @@
     </div>
   </div>
 
-  <script>
+    <script>
     const flipBook = document.getElementById('flipBook');
     let isFlipped = false;
-    
-    // Efek flip saat diklik
-    flipBook.addEventListener('click', function() {
-      this.classList.toggle('flipped');
+    let autoFlipTimer;
+    const flipDuration = 5000; // 5 detik untuk auto flip
+
+    // Fungsi flip
+    function flipPage() {
+      flipBook.classList.toggle('flipped');
       isFlipped = !isFlipped;
-    });
+      resetAutoFlipTimer();
+    }
+
+    // Timer otomatis
+    function startAutoFlipTimer() {
+      autoFlipTimer = setTimeout(flipPage, flipDuration);
+    }
+
+    function resetAutoFlipTimer() {
+      clearTimeout(autoFlipTimer);
+      startAutoFlipTimer();
+    }
+
+    // 1. Aksi Timer Otomatis
+    startAutoFlipTimer();
+
+    // 2. Aksi Klik
+    flipBook.addEventListener('click', flipPage);
     
-    // Efek flip saat di-swipe (untuk mobile)
+    // 3. Aksi Geser/Swipe
     let touchStartX = 0;
     let touchEndX = 0;
     const swipeThreshold = 50;
     
     flipBook.addEventListener('touchstart', e => {
       touchStartX = e.changedTouches[0].screenX;
+      clearTimeout(autoFlipTimer); // Jeda timer saat interaksi manual
     }, {passive: true});
     
     flipBook.addEventListener('touchend', e => {
       touchEndX = e.changedTouches[0].screenX;
+      
       if (touchStartX - touchEndX > swipeThreshold && !isFlipped) {
-        flipBook.classList.add('flipped');
-        isFlipped = true;
+        flipPage(); // Geser ke kiri
       } else if (touchEndX - touchStartX > swipeThreshold && isFlipped) {
-        flipBook.classList.remove('flipped');
-        isFlipped = false;
+        flipPage(); // Geser ke kanan
+      } else {
+        startAutoFlipTimer(); // Lanjutkan timer jika bukan swipe
       }
     }, {passive: true});
+
+    // Handle resize untuk mobile
+    window.addEventListener('resize', function() {
+      document.body.style.display = 'none';
+      document.body.offsetHeight;
+      document.body.style.display = 'flex';
+    });
   </script>
 </body>
 </html>

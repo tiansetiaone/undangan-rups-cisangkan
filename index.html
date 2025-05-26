@@ -19,9 +19,9 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      perspective: 1000px;
       padding: 20px;
       overflow-x: hidden;
+      touch-action: pan-y;
     }
 
     /* Container Utama */
@@ -33,79 +33,52 @@
       align-items: center;
       padding: 20px;
       box-sizing: border-box;
-    }
-
-    /* Buku Flip */
-    .flip-book {
-      width: 100%;
-      max-width: 100%;
       position: relative;
-      transform-style: preserve-3d;
-      cursor: pointer;
+      height: 100vh;
     }
 
     /* Halaman */
     .page {
       width: 100%;
+      max-width: 800px;
       height: auto;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       display: block;
       margin: 0 auto;
-      backface-visibility: hidden;
-      transition: all 1s ease; /* Ditambah 'all' untuk animasi tambahan */
-      transform-origin: left center;
       position: absolute;
-      top: 0;
-      left: 0;
+      transition: transform 0.7s ease, opacity 0.7s ease;
+      will-change: transform, opacity;
     }
 
     /* Sampul Depan */
     .front-cover {
       z-index: 2;
-      transform: rotateY(0deg);
-      position: relative;
+      transform: translateY(0);
       opacity: 1;
     }
 
     /* Isi Undangan */
     .content-page {
       z-index: 1;
-      transform: rotateY(180deg);
-      display: none;
+      transform: translateY(100vh);
+      opacity: 0;
+    }
+
+    /* State Active */
+    .show-content .front-cover {
+      transform: translateY(-100vh);
+      opacity: 0;
+    }
+
+    .show-content .content-page {
+      transform: translateY(0);
       opacity: 1;
-    }
-
-    /* State Flip */
-    .flipped .front-cover {
-      transform: rotateY(-180deg);
-    }
-
-    .flipped .content-page {
-      transform: rotateY(0deg);
-      display: block;
-    }
-
-    /* Efek Kembali ke Cover */
-    .returning .content-page {
-      animation: fadeOutUp 1s forwards;
-    }
-
-    @keyframes fadeOutUp {
-      0% {
-        transform: rotateY(0deg);
-        top: 0;
-      }
-      100% {
-        transform: rotateY(0deg) translateY(-100px);
-        top: -600px;
-      }
     }
 
     /* Responsive */
     @media (min-width: 768px) {
       .container {
-        max-width: 800px;
         margin-top: -1rem;
         padding: 0rem;
       }
@@ -126,96 +99,105 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="flip-book" id="flipBook">
-      <!-- Sampul Depan -->
-      <img 
-        src="cover.png" 
-        alt="Sampul Undangan" 
-        class="page front-cover"
-      >
-      
-      <!-- Isi Undangan -->
-      <img 
-        src="Sage Elegant Holy Communion Poster.png" 
-        alt="Isi Undangan" 
-        class="page content-page"
-      >
-    </div>
+  <div class="container" id="container">
+    <!-- Sampul Depan -->
+    <img 
+      src="cover.png" 
+      alt="Sampul Undangan" 
+      class="page front-cover"
+    >
+    
+    <!-- Isi Undangan -->
+    <img 
+      src="Sage Elegant Holy Communion Poster.png" 
+      alt="Isi Undangan" 
+      class="page content-page"
+    >
   </div>
 
   <script>
-    const flipBook = document.getElementById('flipBook');
-    let isFlipped = false;
-    let hasAutoFlipped = false;
+    const container = document.getElementById('container');
+    let isContentShown = false;
+    let hasAutoShown = false;
     let isAnimating = false;
+    let startY = 0;
+    let endY = 0;
+    const swipeThreshold = 50;
 
-    // Fungsi flip dengan efek khusus saat kembali
-    function flipPage() {
+    // Fungsi untuk menampilkan konten (slide up)
+    function showContent() {
       if (isAnimating) return;
       
-      // Kembali ke cover dengan efek khusus
-      if (isFlipped) {
-        isAnimating = true;
-        flipBook.classList.add('returning');
-        
-        setTimeout(() => {
-          flipBook.classList.remove('flipped', 'returning');
-          isFlipped = false;
-          isAnimating = false;
-        }, 1000); // Sesuai durasi animasi
-      } 
-      // Buka ke isi normal
-      else {
-        flipBook.classList.add('flipped');
-        isFlipped = true;
-      }
+      isAnimating = true;
+      container.classList.add('show-content');
+      isContentShown = true;
+      
+      setTimeout(() => {
+        isAnimating = false;
+      }, 700); // Sesuai durasi transisi
     }
 
-    // Auto flip hanya saat pertama load
-    function initialAutoFlip() {
-      if (!hasAutoFlipped) {
+    // Fungsi untuk menyembunyikan konten (slide down)
+    function hideContent() {
+      if (isAnimating) return;
+      
+      isAnimating = true;
+      container.classList.remove('show-content');
+      isContentShown = false;
+      
+      setTimeout(() => {
+        isAnimating = false;
+      }, 700);
+    }
+
+    // Auto show hanya saat pertama load
+    function initialAutoShow() {
+      if (!hasAutoShown) {
         setTimeout(() => {
-          flipBook.classList.add('flipped');
-          isFlipped = true;
-          hasAutoFlipped = true;
+          showContent();
+          hasAutoShown = true;
         }, 1500);
       }
     }
 
     // 1. Aksi Timer Otomatis (hanya sekali saat load)
-    window.addEventListener('load', initialAutoFlip);
+    window.addEventListener('load', initialAutoShow);
 
-    // 2. Aksi Klik (kembali ke cover dengan efek)
-    flipBook.addEventListener('click', function() {
-      if (isFlipped && !isAnimating) {
-        flipPage();
+    // 2. Aksi Klik
+    container.addEventListener('click', function() {
+      if (isContentShown) {
+        hideContent();
+      } else {
+        showContent();
       }
     });
     
-    // 3. Aksi Geser/Swipe (tetap bekerja tanpa efek khusus)
-    let touchStartX = 0;
-    let touchEndX = 0;
-    const swipeThreshold = 50;
-    
-    flipBook.addEventListener('touchstart', e => {
-      touchStartX = e.changedTouches[0].screenX;
+    // 3. Aksi Geser (Swipe)
+    container.addEventListener('touchstart', e => {
+      startY = e.changedTouches[0].clientY;
     }, {passive: true});
     
-    flipBook.addEventListener('touchend', e => {
+    container.addEventListener('touchmove', e => {
+      e.preventDefault(); // Mencegah scroll default
+    }, {passive: false});
+    
+    container.addEventListener('touchend', e => {
       if (isAnimating) return;
       
-      touchEndX = e.changedTouches[0].screenX;
+      endY = e.changedTouches[0].clientY;
+      const distance = endY - startY;
       
-      if (touchStartX - touchEndX > swipeThreshold && !isFlipped) {
-        flipBook.classList.add('flipped');
-        isFlipped = true;
-      } else if (touchEndX - touchStartX > swipeThreshold && isFlipped) {
-        flipPage(); // Gunakan efek khusus saat kembali
+      // Geser ke atas untuk buka (jika di cover)
+      if (distance < -swipeThreshold && !isContentShown) {
+        showContent();
+      } 
+      // Geser ke bawah untuk tutup (jika di content)
+      else if (distance > swipeThreshold && isContentShown) {
+        hideContent();
       }
     }, {passive: true});
 
-    // Handle resize untuk mobile
+    // Handle resize
     window.addEventListener('resize', function() {
       document.body.style.display = 'none';
       document.body.offsetHeight;
